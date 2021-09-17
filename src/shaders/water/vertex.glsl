@@ -1,4 +1,3 @@
-varying vec2 vUv;
 varying float vElevation;
 
 uniform float uTime;
@@ -35,6 +34,5 @@ void main() {
   gl_Position = projectionPosition;
 
   // varyings
-  vUv = uv;
   vElevation = elevation;
 }

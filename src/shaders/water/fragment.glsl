@@ -1,4 +1,3 @@
-varying vec2 vUv;
 varying float vElevation;
 
 uniform vec3 uDepthColor;

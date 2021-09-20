@@ -19,10 +19,12 @@ import waterFragment from './shaders/water/fragment.glsl'
 import particleVertex from './shaders/particles/vertex.glsl'
 import particleFragment from './shaders/particles/fragment.glsl'
 
+import gradientVertex from './shaders/gradient/vertex.glsl'
+import gradientFragment from './shaders/gradient/fragment.glsl'
+
 import particle from '../static/point.png'
 
 let debugMode = window.location.hash === '#debug'
-console.log(debugMode)
 /**
  * Debug
  */
@@ -86,24 +88,76 @@ const textureLoader = new THREE.TextureLoader()
 const particleTexture = textureLoader.load(particle)
 
 /**
- * Water
+ * Gradient
  */
+const gradient = {}
 
 // colors
-const colors = {}
+gradient.colors = {}
+
+gradient.colors.top = {}
+gradient.colors.top.value = '#152238'
+gradient.colors.top.instance = new THREE.Color(gradient.colors.top.value)
+
+gradient.colors.bottom = {}
+gradient.colors.bottom.value = '#000000'
+gradient.colors.bottom.instance = new THREE.Color(gradient.colors.bottom.value)
+
+// geometry
+gradient.geometry = new THREE.PlaneGeometry(2, 2, 1, 1);
+
+// material
+gradient.material = new THREE.ShaderMaterial({
+    depthWrite: false,
+    vertexShader: gradientVertex,
+    fragmentShader: gradientFragment,
+    uniforms: {
+        uTopColor: { value: gradient.colors.top.instance },
+        uBottomColor: { value: gradient.colors.bottom.instance }
+    }
+})
+
+// mesh
+gradient.mesh = new THREE.Mesh(gradient.geometry, gradient.material)
+
+scene.add(gradient.mesh)
+
+if (debugMode) {
+    const gradientFolder = debug.addFolder({
+        title: 'Gradient',
+        expanded: true
+    })
+
+    gradientFolder.addInput(
+        gradient.colors.top,
+        'value'
+    )
+        .on('change', () => {
+            gradient.colors.top.instance.set(gradient.colors.top.value)
+        })
+}
+
+/**
+ * Water
+ */
+const water = {}
+
+// colors
+water.colors = {}
+
 // depth
-colors.depth = {}
-colors.depth.value = "#18438c"
-colors.depth.instance = new THREE.Color(colors.depth.value)
+water.colors.depth = {}
+water.colors.depth.value = "#18438c"
+water.colors.depth.instance = new THREE.Color(water.colors.depth.value)
 
 // surface
-colors.surface = {}
-colors.surface.value = "#ffffff"
-colors.surface.instance = new THREE.Color(colors.surface.value)
+water.colors.surface = {}
+water.colors.surface.value = "#ffffff"
+water.colors.surface.instance = new THREE.Color(water.colors.surface.value)
 
-const waterGeometry = new THREE.PlaneGeometry(2, 2, 512, 512)
+water.geometry = new THREE.PlaneGeometry(2, 2, 512, 512)
 
-const waterMaterial = new THREE.ShaderMaterial({
+water.material = new THREE.ShaderMaterial({
     side: THREE.DoubleSide,
     vertexShader: waterVertex,
     fragmentShader: waterFragment,
@@ -119,8 +173,8 @@ const waterMaterial = new THREE.ShaderMaterial({
         uSmallWavesFrequency: { value: 3.0 },
         uSmallWavesIterations: { value: 4.0 },
         // color
-        uDepthColor: { value: colors.depth.instance },
-        uSurfaceColor: { value: colors.surface.instance },
+        uDepthColor: { value: water.colors.depth.instance },
+        uSurfaceColor: { value: water.colors.surface.instance },
         uColorOffset: { value: 0.05 },
         uColorMultiplier: { value: 5.0 }
     }
@@ -129,36 +183,36 @@ const waterMaterial = new THREE.ShaderMaterial({
 if (debugMode) {
     // color debug
     const colorFolder = debug.addFolder({
-        title: 'Colors',
+        title: 'Water Colors',
         expanded: true
     })
 
     colorFolder.addInput(
-        colors.depth,
+        water.colors.depth,
         'value',
         { label: 'uDepthColor' }
     )
         .on('change', () => {
-            colors.depth.instance.set(colors.depth.value)
+            water.colors.depth.instance.set(water.colors.depth.value)
         })
 
     colorFolder.addInput(
-        colors.surface,
+        water.colors.surface,
         'value',
         { label: 'uSurfaceColor' }
     )
         .on('change', () => {
-            colors.surface.instance.set(colors.surface.value)
+            water.colors.surface.instance.set(water.colors.surface.value)
         })
 
     colorFolder.addInput(
-        waterMaterial.uniforms.uColorOffset,
+        water.material.uniforms.uColorOffset,
         'value',
         { min: 0, max: 1, step: 0.01, label: 'uColorOffset' }
     )
 
     colorFolder.addInput(
-        waterMaterial.uniforms.uColorMultiplier,
+        water.material.uniforms.uColorMultiplier,
         'value',
         { min: 0, max: 10, step: 0.01, label: 'uColorMultiplier' }
     )
@@ -169,19 +223,19 @@ if (debugMode) {
         expanded: true
     })
     bigWavesFolder.addInput(
-        waterMaterial.uniforms.uBigWavesElevation,
+        water.material.uniforms.uBigWavesElevation,
         'value',
         { min: 0, max: 0.5, step: 0.01, label: 'uBigWavesElevation' }
     )
 
     bigWavesFolder.addInput(
-        waterMaterial.uniforms.uBigWavesFrequency,
+        water.material.uniforms.uBigWavesFrequency,
         'value',
         { min: 0, max: 0.5, step: 0.01, label: 'uBigWavesFrequency' }
     )
 
     bigWavesFolder.addInput(
-        waterMaterial.uniforms.uBigWavesSpeed,
+        water.material.uniforms.uBigWavesSpeed,
         'value',
         { min: 0, max: 1, step: 0.01, label: 'uBigWavesSpeed' }
     )
@@ -193,59 +247,74 @@ if (debugMode) {
     })
 
     smallWavesFolder.addInput(
-        waterMaterial.uniforms.uSmallWavesElevation,
+        water.material.uniforms.uSmallWavesElevation,
         'value',
         { min: 0, max: 1, step: 0.01, label: 'uSmallWavesElevation' }
     )
 
     smallWavesFolder.addInput(
-        waterMaterial.uniforms.uSmallWavesSpeed,
+        water.material.uniforms.uSmallWavesSpeed,
         'value',
         { min: 0, max: 4, step: 0.01, label: 'uSmallWavesSpeed' }
     )
 
     smallWavesFolder.addInput(
-        waterMaterial.uniforms.uSmallWavesFrequency,
+        water.material.uniforms.uSmallWavesFrequency,
         'value',
         { min: 0, max: 30, step: 0.01, label: 'uSmallWavesFrequency' }
     )
 
     smallWavesFolder.addInput(
-        waterMaterial.uniforms.uSmallWavesIterations,
+        water.material.uniforms.uSmallWavesIterations,
         'value',
         { min: 0, max: 6, step: 0.01, label: 'uSmallWavesIterations' }
     )
 
 }
 
-const water = new THREE.Mesh(waterGeometry, waterMaterial)
-water.rotation.x = - Math.PI * 0.5
-scene.add(water)
+water.mesh = new THREE.Mesh(water.geometry, water.material)
+water.mesh.rotation.x = - Math.PI * 0.5
+scene.add(water.mesh)
 
-const count = 200;
+/**
+ * Particles
+ */
+const particles = {}
+particles.count = 200
 
-const position = new Float32Array(count * 3)
-const progress = new Float32Array(count)
-const scale = new Float32Array(count)
-const alpha = new Float32Array(count)
+particles.position = {}
+particles.position.data = new Float32Array(particles.count * 3)
+particles.position.attribute = new THREE.BufferAttribute(particles.position.data, 3)
 
-for (let i = 0; i < count; i++) {
-    position[i * 3 + 0] = (Math.random() - 0.5) * 2
-    position[i * 3 + 1] = - 0.2
-    position[i * 3 + 2] = (Math.random() - 0.5) * 2
+particles.progress = {}
+particles.progress.data = new Float32Array(particles.count)
+particles.progress.attribute = new THREE.BufferAttribute(particles.progress.data, 1)
 
-    scale[i] = Math.random()
-    alpha[i] = Math.random()
-    progress[i] = Math.random()
+particles.scale = {}
+particles.scale.data = new Float32Array(particles.count)
+particles.scale.attribute = new THREE.BufferAttribute(particles.scale.data, 1)
+
+particles.alpha = {}
+particles.alpha.data = new Float32Array(particles.count)
+particles.alpha.attribute = new THREE.BufferAttribute(particles.alpha.data, 1)
+
+for (let i = 0; i < particles.count; i++) {
+    particles.position.data[i * 3 + 0] = (Math.random() - 0.5) * 2
+    particles.position.data[i * 3 + 1] = - 0.2
+    particles.position.data[i * 3 + 2] = (Math.random() - 0.5) * 2
+
+    particles.scale.data[i] = Math.random()
+    particles.progress.data[i] = Math.random()
+    particles.alpha.data[i] = Math.random()
 }
 
-const particleGeometry = new THREE.BufferGeometry()
-particleGeometry.setAttribute('position', new THREE.BufferAttribute(position, 3))
-particleGeometry.setAttribute('aScale', new THREE.BufferAttribute(scale, 1))
-particleGeometry.setAttribute('aAlpha', new THREE.BufferAttribute(alpha, 1))
-particleGeometry.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1))
+particles.geometry = new THREE.BufferGeometry()
+particles.geometry.setAttribute('position', particles.position.attribute)
+particles.geometry.setAttribute('aProgress', particles.progress.attribute)
+particles.geometry.setAttribute('aScale', particles.scale.attribute)
+particles.geometry.setAttribute('aAlpha', particles.alpha.attribute)
 
-const particleMaterial = new THREE.ShaderMaterial({
+particles.material = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
@@ -260,8 +329,8 @@ const particleMaterial = new THREE.ShaderMaterial({
     }
 })
 
-const particles = new THREE.Points(particleGeometry, particleMaterial)
-scene.add(particles)
+particles.points = new THREE.Points(particles.geometry, particles.material)
+scene.add(particles.points)
 
 /**
  * Renderer
@@ -315,8 +384,8 @@ const tick = () => {
     lastElapsedTime = elapsedTime
 
     // update material
-    waterMaterial.uniforms.uTime.value = elapsedTime
-    particleMaterial.uniforms.uTime.value = elapsedTime
+    water.material.uniforms.uTime.value = elapsedTime
+    particles.material.uniforms.uTime.value = elapsedTime
 
     // Update controls
     controls.update()
